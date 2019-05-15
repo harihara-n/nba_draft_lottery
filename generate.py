@@ -1,4 +1,4 @@
-import random
+from numpy.random import choice
 
 class TeamPercentage(object):
 	def __init__(self, team_name, team_lottery_pick_percentage):
@@ -6,21 +6,18 @@ class TeamPercentage(object):
 		self.team_lottery_pick_percentage = team_lottery_pick_percentage
 
 def generate_draft_order(teams, num_lottery_picks):
-	teams_list = []
-	for team in teams:
-		teams_list = teams_list + ([team.team_name] * team.team_lottery_pick_percentage)
-
-	random.seed()
 	draft_order = []
-	for lottery_pick_num in xrange(num_lottery_picks):
-		random_number = random.randint(0, len(teams_list) - 1)
-		chosen_team = teams_list[random_number]
-		draft_order.append(chosen_team)
-		teams_list = filter(lambda team: team != chosen_team, teams_list)
+	teams_copy = list(teams)
+	for lottery_pick in xrange(num_lottery_picks):
+		chosen_team = choice([team.team_name for team in teams_copy], 1, [team.team_lottery_pick_percentage for team in teams_copy])
+		draft_order.append(chosen_team[0])
+		for index, team in enumerate(teams_copy):
+			if team.team_name == chosen_team:
+				del teams_copy[index]
+				break
 
-	teams = filter(lambda team: team.team_name not in draft_order, teams)
-	return draft_order + [team.team_name for team in teams]
-
+	teams_copy = filter(lambda team: team.team_name not in draft_order, teams_copy)
+	return draft_order + [team.team_name for team in teams_copy]
 
 def get_file_input():
 	teams = []
@@ -29,9 +26,8 @@ def get_file_input():
 	with open(input_file_path) as file:
 		for line in file:
 			parts = line.strip().split(",")
-			teams.append(TeamPercentage(parts[0], int(parts[1])))
+			teams.append(TeamPercentage(parts[0], float(parts[1])))
 	return teams
-
 
 def get_console_input():
 	num_teams = int(raw_input('\nEnter the number of teams: '))
@@ -39,14 +35,16 @@ def get_console_input():
 	print '\nWill now prompt you to enter the {} teams in draft order'.format(num_teams)
 	for num_team in xrange(num_teams):
 		team_name = raw_input('\nEnter team #{} name: '.format(num_team + 1))
-		team_lottery_pick_percentage = int(raw_input("Enter {}'s lottery pick percentage: ".format(team_name)))
+		team_lottery_pick_percentage = float(raw_input("Enter {}'s lottery pick percentage: ".format(team_name)))
 		teams.append(TeamPercentage(team_name, team_lottery_pick_percentage))
 	return teams
 
-def verify_teams_input(teams):
+def verify_and_process_teams_input(teams):
 	sum_lottery_pick_percentages = sum([team.team_lottery_pick_percentage for team in teams])
 	if sum_lottery_pick_percentages != 100:
 		raise Exception('Lottery pick percentages of teams: {} is not 100'.format(sum_lottery_pick_percentages))
+
+	return map(lambda team: TeamPercentage(team.team_name, team.team_lottery_pick_percentage / 100.0), teams)
 
 def get_num_lottery_picks_input(num_teams):
 	num_lottery_picks = int(raw_input('\nEnter the number of lottery picks: '))
@@ -69,7 +67,7 @@ if __name__ == '__main__':
 	else:
 		teams = get_console_input()
 
-	verify_teams_input(teams)
+	teams = verify_and_process_teams_input(teams)
 
 	num_lottery_picks = get_num_lottery_picks_input(len(teams))
 
