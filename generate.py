@@ -7,17 +7,14 @@ class TeamPercentage(object):
 
 def generate_draft_order(teams, num_lottery_picks):
 	draft_order = []
-	teams_copy = list(teams)
-	for lottery_pick in xrange(num_lottery_picks):
-		chosen_team = choice([team.team_name for team in teams_copy], 1, [team.team_lottery_pick_percentage for team in teams_copy])
+	while len(draft_order) < num_lottery_picks:
+		chosen_team = choice([team.team_name for team in teams], 1, [team.team_lottery_pick_percentage for team in teams])
+		if chosen_team in draft_order:
+			continue
 		draft_order.append(chosen_team[0])
-		for index, team in enumerate(teams_copy):
-			if team.team_name == chosen_team:
-				del teams_copy[index]
-				break
 
-	teams_copy = filter(lambda team: team.team_name not in draft_order, teams_copy)
-	return draft_order + [team.team_name for team in teams_copy]
+	remaining_teams = filter(lambda team: team.team_name not in draft_order, teams)
+	return draft_order + [team.team_name for team in remaining_teams]
 
 def get_file_input():
 	teams = []
